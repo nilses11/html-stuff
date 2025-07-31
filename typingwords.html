@@ -1,25 +1,112 @@
 <!DOCTYPE html>
 <html>
+<head>
+  <link rel="stylesheet" href="typingwords.css">
+</head>
 <body>
 
-<p style="text-align:center;" id="keyword">This</p>
-<form style="text-align:center;">
-    <input type="text" id="keytext" value="" onkeyup="checkWord()"/>
-</form>
+<div class="container">
+  <div id="timer" style="font-size:1.1rem;color:#64748b;margin-bottom:10px;">Time: 0.00s</div>
+  <p id="keyword">This</p>
+  <form id="inputform" onsubmit="return false;">
+    <input type="text" id="keytext" value="" autocomplete="off" placeholder="Type the word here..." />
+  </form>
+</div>
+
+
 
 <script type="text/javascript">
-function checkWord() {
-    if(document.getElementById("keytext").value === document.getElementById("keyword").innerHTML)  {
-        document.getElementById("keytext").value = "";
-        document.getElementById("keyword").innerHTML = getRandomWord();
+let timerStarted = false;
+let timerInterval = null;
+let startTime = null;
+let uniqueWords = new Set();
+const totalWordsGoal = 100;
+let finished = false;
+
+function startTimer() {
+  if (finished) return;
+  if (!timerStarted) {
+    timerStarted = true;
+    startTime = Date.now();
+    timerInterval = setInterval(updateTimer, 30);
+  }
+}
+
+function updateTimer() {
+  const now = Date.now();
+  const elapsed = ((now - startTime) / 1000).toFixed(2);
+  document.getElementById("timer").textContent = `Time: ${elapsed}s`;
+}
+
+function stopTimer() {
+  timerStarted = false;
+  clearInterval(timerInterval);
+}
+
+function resetTimer() {
+  timerStarted = false;
+  clearInterval(timerInterval);
+  document.getElementById("timer").textContent = "Time: 0.00s";
+}
+
+function checkWordAndStartTimer(e) {
+  if (finished) return;
+  const input = document.getElementById("keytext");
+  if (!timerStarted && input.value.length > 0) {
+    startTimer();
+  }
+  const keyword = document.getElementById("keyword").innerHTML;
+  if (input.value === keyword) {
+    uniqueWords.add(keyword);
+    if (uniqueWords.size >= totalWordsGoal) {
+      finishGame();
+      return;
     }
+    input.value = "";
+    document.getElementById("keyword").innerHTML = getRandomWord();
+  }
+}
+
+function finishGame() {
+  finished = true;
+  stopTimer();
+  // Replace input with restart button
+  const form = document.getElementById("inputform");
+  form.innerHTML = '<button id="restartbtn" type="button" style="padding:12px 24px;font-size:1.1rem;border-radius:8px;background:#6366f1;color:#fff;border:none;cursor:pointer;transition:background 0.2s;">Restart</button>';
+  document.getElementById("restartbtn").onclick = restartGame;
+}
+
+function restartGame() {
+  finished = false;
+  uniqueWords = new Set();
+  resetTimer();
+  // Restore input field
+  const form = document.getElementById("inputform");
+  form.innerHTML = '<input type="text" id="keytext" value="" autocomplete="off" placeholder="Type the word here..." />';
+  document.getElementById("keyword").innerHTML = getRandomWord();
+  // Re-attach event listener
+  const input = document.getElementById("keytext");
+  input.addEventListener('keyup', checkWordAndStartTimer);
+  input.focus();
 }
 
 function getRandomWord() {
-    var myArray = document.getElementById("words").innerText.split(" ");
-    var rand = myArray[Math.floor(Math.random() * myArray.length)];
-    return rand;
+  var myArray = document.getElementById("words").innerText.split(" ");
+  // Avoid picking a word already used if possible
+  var available = myArray.filter(w => !uniqueWords.has(w));
+  var pool = available.length > 0 ? available : myArray;
+  var rand = pool[Math.floor(Math.random() * pool.length)];
+  return rand;
 }
+
+// Attach event listener on load
+window.addEventListener('DOMContentLoaded', function() {
+  const input = document.getElementById("keytext");
+  if (input) {
+    input.addEventListener('keyup', checkWordAndStartTimer);
+    input.focus();
+  }
+});
 </script>
 <br>
 <br>
